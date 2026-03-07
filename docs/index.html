@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPDPA Compliance Skill — India's Data Protection for AI Coding Agents</title>
+    <meta name="description"
+        content="Audit, implement, and remediate DPDPA 2023 compliance in any codebase. The first India-specific regulatory compliance skill for AI coding agents.">
+    <meta property="og:title" content="DPDPA Compliance Agent Skill">
+    <meta property="og:description"
+        content="India's Digital Personal Data Protection Act 2023 — compliance automation for coding agents. Audit 50+ checkpoints. Code patterns for 6 frameworks.">
+    <meta property="og:url" content="https://vins13pattar.github.io/dpdpa-compliance/">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --saffron: #FF6B00;
+            --navy: #0A1628;
+            --white: #F8F9FA;
+            --green: #00A86B;
+            --blue: #138808;
+            --surface: #111B2E;
+            --surface-light: #182540;
+            --text-muted: #8B99AE;
+            --border: #1E3050;
+            --glow: rgba(255, 107, 0, 0.15);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--navy);
+            color: var(--white);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grain overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== NAV ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 22, 40, 0.85);
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.25rem;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .nav-logo span {
+            color: var(--saffron);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--white);
+        }
+
+        .nav-cta {
+            background: var(--saffron) !important;
+            color: var(--navy) !important;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600 !important;
+            transition: transform 0.2s, box-shadow 0.2s !important;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(255, 107, 0, 0.4);
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            padding: 160px 0 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -300px;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(255, 107, 0, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -100px;
+            left: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 168, 107, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 6px 16px 6px 8px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .hero-badge .flag {
+            display: inline-block;
+            width: 22px;
+            height: 15px;
+            background: linear-gradient(to bottom, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .hero-badge .flag::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 5px;
+            height: 5px;
+            border: 1px solid #000080;
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.1;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        h1 .accent {
+            color: var(--saffron);
+        }
+
+        h1 .green {
+            color: var(--green);
+        }
+
+        .hero-sub {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 580px;
+            margin-bottom: 40px;
+            font-weight: 300;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .install-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            max-width: 520px;
+            position: relative;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .install-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .install-cmd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--saffron);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .install-cmd code {
+            user-select: all;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--saffron);
+            color: var(--saffron);
+        }
+
+        .hero-agents {
+            margin-top: 40px;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .hero-agents p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+
+        .agent-logos {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .agent-tag {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ===== MODES ===== */
+        .modes {
+            padding: 80px 0;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--saffron);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 56px;
+            line-height: 1.2;
+        }
+
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .mode-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px 32px;
+            transition: border-color 0.3s, transform 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:hover {
+            border-color: var(--saffron);
+            transform: translateY(-4px);
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .mode-card:nth-child(1)::before {
+            background: var(--saffron);
+        }
+
+        .mode-card:nth-child(2)::before {
+            background: var(--green);
+        }
+
+        .mode-card:nth-child(3)::before {
+            background: #4A90D9;
+        }
+
+        .mode-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+        }
+
+        .mode-card:nth-child(1) .mode-icon {
+            background: rgba(255, 107, 0, 0.12);
+        }
+
+        .mode-card:nth-child(2) .mode-icon {
+            background: rgba(0, 168, 107, 0.12);
+        }
+
+        .mode-card:nth-child(3) .mode-icon {
+            background: rgba(74, 144, 217, 0.12);
+        }
+
+        .mode-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .mode-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* ===== COVERAGE ===== */
+        .coverage {
+            padding: 80px 0;
+        }
+
+        .coverage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .cov-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .cov-item:hover {
+            border-color: var(--saffron);
+        }
+
+        .cov-section {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--saffron);
+            background: rgba(255, 107, 0, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .cov-text h4 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .cov-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ===== PENALTIES ===== */
+        .penalties {
+            padding: 80px 0;
+        }
+
+        .penalty-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .penalty-table th {
+            text-align: left;
+            padding: 16px 24px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            background: var(--surface-light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .penalty-table td {
+            padding: 14px 24px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .penalty-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .penalty-amount {
+            font-family: 'JetBrains Mono', monospace;
+            color: #FF4444;
+            font-weight: 600;
+        }
+
+        /* ===== FRAMEWORKS ===== */
+        .frameworks {
+            padding: 80px 0;
+        }
+
+        .fw-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .fw-tag {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .fw-tag:hover {
+            border-color: var(--green);
+            background: rgba(0, 168, 107, 0.05);
+        }
+
+        /* ===== PROMPTS ===== */
+        .prompts {
+            padding: 80px 0;
+        }
+
+        .prompt-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .prompt-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            position: relative;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        .prompt-card:hover {
+            border-color: var(--saffron);
+        }
+
+        .prompt-card::before {
+            content: '>';
+            color: var(--saffron);
+            margin-right: 8px;
+            font-weight: 700;
+        }
+
+        /* ===== CTA ===== */
+        .cta {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .cta-box {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface-light) 100%);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 64px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--saffron), var(--green), transparent);
+        }
+
+        .cta h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+            margin-bottom: 16px;
+        }
+
+        .cta p {
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto 32px;
+        }
+
+        .cta-install {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--navy);
+            border: 1px solid var(--border);
+            padding: 16px 32px;
+            border-radius: 10px;
+            display: inline-block;
+            font-size: 1rem;
+            color: var(--saffron);
+            margin-bottom: 20px;
+        }
+
+        .cta-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .cta-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .cta-links a:hover {
+            color: var(--saffron);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        footer p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        footer a {
+            color: var(--saffron);
+            text-decoration: none;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 120px 0 60px;
+            }
+
+            .modes-grid,
+            .coverage-grid,
+            .prompt-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .penalty-table {
+                font-size: 0.8rem;
+            }
+
+            .penalty-table th,
+            .penalty-table td {
+                padding: 10px 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="container">
+            <a href="#" class="nav-logo">DPDPA<span>.skill</span></a>
+            <div class="nav-links">
+                <a href="#modes">Modes</a>
+                <a href="#coverage">Coverage</a>
+                <a href="#penalties">Penalties</a>
+                <a href="#frameworks">Frameworks</a>
+                <a href="https://github.com/vins13pattar/dpdpa-compliance" class="nav-cta">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">
+                <span class="flag"></span>
+                First India-specific compliance skill on skills.sh
+            </div>
+            <h1>
+                <span class="accent">DPDPA</span> Compliance<br>
+                for <span class="green">Coding Agents</span>
+            </h1>
+            <p class="hero-sub">
+                Audit, implement, and remediate India's Digital Personal Data Protection Act 2023
+                in any codebase. 50+ checkpoints. 6 frameworks. One install command.
+            </p>
+            <div class="install-box">
+                <div class="install-label">Install</div>
+                <div class="install-cmd">
+                    <code>npx skills add vins13pattar/dpdpa-compliance</code>
+                    <button class="copy-btn" onclick="copyCmd()">Copy</button>
+                </div>
+            </div>
+            <div class="hero-agents">
+                <p>Works with</p>
+                <div class="agent-logos">
+                    <span class="agent-tag">Claude Code</span>
+                    <span class="agent-tag">Cursor</span>
+                    <span class="agent-tag">Codex</span>
+                    <span class="agent-tag">Copilot</span>
+                    <span class="agent-tag">OpenCode</span>
+                    <span class="agent-tag">Windsurf</span>
+                    <span class="agent-tag">37+ more</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODES -->
+    <section class="modes" id="modes">
+        <div class="container">
+            <div class="section-label reveal">Three Modes</div>
+            <h2 class="section-title reveal">One skill. Three ways to use it.</h2>
+            <div class="modes-grid">
+                <div class="mode-card reveal">
+                    <div class="mode-icon">&#128269;</div>
+                    <h3>Audit</h3>
+                    <p>Systematically scan your codebase against a 50+ point DPDPA checklist. Get findings with severity
+                        ratings, exact DPDPA section references, and concrete code fixes.</p>
+                </div>
+                <div class="mode-card reveal">
+                    <div class="mode-icon">&#128736;</div>
+                    <h3>Implement</h3>
+                    <p>Generate production-ready DPDPA-compliant code &mdash; consent management, data export, account
+                        deletion, breach notification, children's data protection.</p>
+                </div>
+                <div class="mode-card reveal">
+                    <div class="mode-icon">&#128218;</div>
+                    <h3>Guidance</h3>
+                    <p>Actionable recommendations for obligations beyond code &mdash; DPO appointment, DPIA processes,
+                        breach response playbooks, data processor agreements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COVERAGE -->
+    <section class="coverage" id="coverage">
+        <div class="container">
+            <div class="section-label reveal">Act Coverage</div>
+            <h2 class="section-title reveal">Every major DPDPA obligation. Covered.</h2>
+            <div class="coverage-grid">
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.3-5</span>
+                    <div class="cov-text">
+                        <h4>Consent Management</h4>
+                        <p>Collection, recording, withdrawal, Consent Manager integration</p>
+                    </div>
+                </div>
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.7</span>
+                    <div class="cov-text">
+                        <h4>Data Fiduciary Obligations</h4>
+                        <p>Accuracy, security safeguards, breach notification, retention, DPO</p>
+                    </div>
+                </div>
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.8</span>
+                    <div class="cov-text">
+                        <h4>Children's Data</h4>
+                        <p>Age verification, parental consent, tracking restrictions</p>
+                    </div>
+                </div>
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.10</span>
+                    <div class="cov-text">
+                        <h4>Significant Data Fiduciary</h4>
+                        <p>DPO appointment, DPIA, independent audits</p>
+                    </div>
+                </div>
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.11-14</span>
+                    <div class="cov-text">
+                        <h4>Data Principal Rights</h4>
+                        <p>Access, correction, erasure, grievance, nomination</p>
+                    </div>
+                </div>
+                <div class="cov-item reveal">
+                    <span class="cov-section">S.16</span>
+                    <div class="cov-text">
+                        <h4>Cross-Border Transfer</h4>
+                        <p>Data flow mapping, transfer controls, processor locations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PENALTIES -->
+    <section class="penalties" id="penalties">
+        <div class="container">
+            <div class="section-label reveal">Know the Stakes</div>
+            <h2 class="section-title reveal">Penalties that demand attention.</h2>
+            <table class="penalty-table reveal">
+                <thead>
+                    <tr>
+                        <th>Breach</th>
+                        <th>Maximum Penalty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Security safeguards failure</td>
+                        <td class="penalty-amount">&#x20B9; 250 Crore</td>
+                    </tr>
+                    <tr>
+                        <td>General Data Fiduciary obligations</td>
+                        <td class="penalty-amount">&#x20B9; 250 Crore</td>
+                    </tr>
+                    <tr>
+                        <td>Children's data obligations</td>
+                        <td class="penalty-amount">&#x20B9; 200 Crore</td>
+                    </tr>
+                    <tr>
+                        <td>Breach notification failure</td>
+                        <td class="penalty-amount">&#x20B9; 200 Crore</td>
+                    </tr>
+                    <tr>
+                        <td>Significant Data Fiduciary obligations</td>
+                        <td class="penalty-amount">&#x20B9; 150 Crore</td>
+                    </tr>
+                    <tr>
+                        <td>Other non-compliance</td>
+                        <td class="penalty-amount">&#x20B9; 50 Crore</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- FRAMEWORKS -->
+    <section class="frameworks" id="frameworks">
+        <div class="container">
+            <div class="section-label reveal">Framework Support</div>
+            <h2 class="section-title reveal">Production-ready patterns for your stack.</h2>
+            <div class="fw-grid reveal">
+                <span class="fw-tag">Node.js / Express</span>
+                <span class="fw-tag">Python / Django</span>
+                <span class="fw-tag">PHP / Laravel</span>
+                <span class="fw-tag">React</span>
+                <span class="fw-tag">React Native / Expo</span>
+                <span class="fw-tag">PostgreSQL</span>
+                <span class="fw-tag">MySQL</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROMPTS -->
+    <section class="prompts">
+        <div class="container">
+            <div class="section-label reveal">Just Say It</div>
+            <h2 class="section-title reveal">Example prompts that activate the skill.</h2>
+            <div class="prompt-grid">
+                <div class="prompt-card reveal">Audit my app for DPDPA compliance</div>
+                <div class="prompt-card reveal">Implement a consent management system for Indian data protection</div>
+                <div class="prompt-card reveal">Add an account deletion flow that meets DPDPA requirements</div>
+                <div class="prompt-card reveal">Check if my analytics setup violates DPDPA</div>
+                <div class="prompt-card reveal">Add children's data protection to my React Native app</div>
+                <div class="prompt-card reveal">What organizational steps do I need beyond code?</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-box reveal">
+                <h2>Start in 10 seconds.</h2>
+                <p>One command. Every coding agent. Full DPDPA compliance coverage.</p>
+                <div class="cta-install">npx skills add vins13pattar/dpdpa-compliance</div>
+                <div class="cta-links">
+                    <a href="https://github.com/vins13pattar/dpdpa-compliance">GitHub Repository</a>
+                    <a href="https://skills.sh/vins13pattar/dpdpa-compliance/dpdpa-compliance">skills.sh Listing</a>
+                    <a href="https://github.com/vins13pattar/dpdpa-compliance/blob/main/LICENSE">MIT License</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>
+                Built by <a href="https://github.com/vins13pattar">Vinod S Pattar</a> &middot;
+                Technical compliance guidance, not legal advice &middot;
+                <a href="https://github.com/vins13pattar/dpdpa-compliance">Contribute</a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Copy install command
+        function copyCmd() {
+            navigator.clipboard.writeText('npx skills add vins13pattar/dpdpa-compliance');
+            const btn = document.querySelector('.copy-btn');
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        }
+
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+
+</body>
+
+</html>

@@ -1,5 +1,9 @@
 # DPDPA Compliance Agent Skill
 
+[![skills.sh](https://img.shields.io/badge/skills.sh-dpdpa--compliance-blue)](https://skills.sh/vins13pattar/dpdpa-compliance/dpdpa-compliance)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-orange)](https://agentskills.io/)
+
 An [Agent Skill](https://agentskills.io/) that helps coding agents audit, implement, and
 remediate compliance with India's **Digital Personal Data Protection Act, 2023 (DPDPA)**.
 
