@@ -17,14 +17,14 @@ Works with **Claude Code**, **Cursor**, **Codex**, **OpenCode**, **Copilot**, an
 ## Install
 
 ```bash
-npx skills add vinodkumar-7/dpdpa-compliance
+npx skills add vins13pattar/dpdpa-compliance
 ```
 
 Or install to a specific agent:
 
 ```bash
-npx skills add vinodkumar-7/dpdpa-compliance -a claude-code
-npx skills add vinodkumar-7/dpdpa-compliance -a cursor
+npx skills add vins13pattar/dpdpa-compliance -a claude-code
+npx skills add vins13pattar/dpdpa-compliance -a cursor
 ```
 
 ## Usage
