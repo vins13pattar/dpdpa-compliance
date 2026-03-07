@@ -230,7 +230,7 @@ When producing an audit report, use this structure:
 
 Read these when you need deeper guidance:
 
-- `references/audit-checklist.md` — Detailed 50+ point checklist for systematic auditing
+- `references/audit-checklist.md` — Detailed 52-point checklist for systematic auditing
 - `references/implementation-patterns.md` — Code patterns for Node.js, Python, React, React Native, Laravel, and database schemas
 - `references/organizational-guidelines.md` — Non-code obligations, DPO requirements, DPIA guidance, breach response playbook
 - `references/dpdpa-full-text.md` — Complete Act text for precise section references

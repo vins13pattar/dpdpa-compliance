@@ -14,7 +14,7 @@ Works with **Claude Code**, **Cursor**, **Codex**, **OpenCode**, **Copilot**, an
 
 | Mode | Description |
 |------|-------------|
-| **Audit** | Systematically scan your codebase against a 50+ point DPDPA checklist. Get findings with severity, DPDPA section references, and concrete code fixes. |
+| **Audit** | Systematically scan your codebase against a 52-point DPDPA checklist. Get findings with severity, DPDPA section references, and concrete code fixes. |
 | **Implement** | Generate production-ready DPDPA-compliant code — consent management, data export, account deletion, breach notification, children's data protection, and more. |
 | **Guidance** | Get actionable recommendations for organizational obligations that go beyond code — DPO appointment, DPIA processes, breach response playbooks, data processor agreements. |
 
@@ -71,7 +71,7 @@ skills/dpdpa-compliance/
 ├── scripts/
 │   └── audit-scan.sh                     # Automated codebase scanner
 └── references/
-    ├── audit-checklist.md                # 50+ point audit checklist
+    ├── audit-checklist.md                # 52-point audit checklist
     ├── implementation-patterns.md        # Code patterns (Node, Python, Laravel, React, React Native)
     ├── organizational-guidelines.md      # Non-code obligations and templates
     └── dpdpa-full-text.md                # Complete Act text for reference

@@ -1,6 +1,6 @@
 # DPDPA Compliance Audit Checklist
 
-A systematic checklist for auditing application codebases against the Digital Personal Data
+A systematic 52-point checklist for auditing application codebases against the Digital Personal Data
 Protection Act, 2023. Walk through each section in order. For each item, check the codebase
 and report findings.
 
@@ -54,6 +54,31 @@ the required notice (Section 5) as soon as reasonably practicable.
 **Check:** Every consent event is recorded with: who consented, when, what they
 consented to, the version of notice shown, and how they consented.
 
+### A7. Consent Version Tracking
+**Search for:** consent_version, notice_version, policy_version in consent records
+**Check:** Each consent record stores which version of the privacy notice was shown
+at the time of consent. When the notice is updated, new consent is collected against
+the new version, and historical records reference the exact version the user agreed to.
+```
+// VIOLATION: Consent stored without notice version
+{ userId: "u123", consentedAt: "2024-01-15", purpose: "marketing" }
+
+// COMPLIANT: Consent record includes notice version
+{ userId: "u123", consentedAt: "2024-01-15", purpose: "marketing", noticeVersion: "2.1" }
+```
+
+### A8. Consent Expiry and Renewal
+**Search for:** consent_expiry, consent_renewal, consent_ttl, reconfirm_consent
+**Check:** Consent has a defined validity period and users are prompted to renew
+consent periodically. Stale consent (e.g., granted years ago with no reconfirmation)
+should not be treated as perpetually valid.
+```
+// COMPLIANT: Consent with expiry and renewal check
+if (consent.grantedAt < Date.now() - CONSENT_TTL) {
+  promptConsentRenewal(user);
+}
+```
+
 ---
 
 ## B. Notice and Disclosure (DPDPA Section 5)
@@ -103,6 +128,22 @@ or anonymize — though anonymization may be acceptable if truly irreversible).
 **Search for:** backup scripts, disaster recovery configs
 **Check:** Deletion propagates to backups within a reasonable timeframe.
 
+### C5. Anonymization Validation
+**Search for:** anonymize, pseudonymize, mask, hash_pii, de_identify
+**Check:** If anonymization is used as an alternative to deletion, verify that it
+is truly irreversible and cannot be re-identified. Pseudonymization (where a mapping
+key exists to reverse the process) does not qualify as anonymization under DPDPA.
+```
+// VIOLATION: Reversible pseudonymization treated as anonymization
+const anonymize = (email) => encrypt(email, SECRET_KEY); // can be decrypted
+
+// COMPLIANT: Irreversible anonymization
+const anonymize = (email) => {
+  // One-way hash with no stored mapping — cannot be reversed
+  return crypto.createHash('sha256').update(email + salt).digest('hex');
+};
+```
+
 ---
 
 ## D. Security Safeguards (DPDPA Section 7c)
@@ -136,6 +177,77 @@ Logs do not contain personal data in plaintext.
 **Check:** Dependencies are up to date. Known vulnerabilities are patched.
 Security scanning is part of CI/CD.
 
+### D7. Hardcoded Secrets and Credentials
+**Search for:** source code for hardcoded API keys, passwords, tokens, connection strings
+**Check:** No API keys, database passwords, tokens, or connection strings are hardcoded
+in source files. Hardcoded credentials risk unauthorized access to personal data stores.
+Use environment variables, secrets managers, or vault services instead.
+```
+// VIOLATION: Hardcoded database credentials
+const db = mysql.connect({
+  host: "db.example.com",
+  password: "SuperSecret123"
+});
+
+// COMPLIANT: Credentials from environment/secrets manager
+const db = mysql.connect({
+  host: process.env.DB_HOST,
+  password: await secretsManager.get("db-password")
+});
+```
+
+### D8. Personal Data in Error Responses
+**Search for:** error handlers, catch blocks, API error responses
+**Check:** Stack traces and error messages do not leak personal data (emails, names,
+user IDs) to end users. Error responses should return generic messages in production
+while logging detailed errors server-side.
+```
+// VIOLATION: Leaking personal data in error response
+catch (err) {
+  res.status(500).json({ error: `Failed to process user ${user.email}: ${err.stack}` });
+}
+
+// COMPLIANT: Generic error to client, detailed log server-side
+catch (err) {
+  logger.error("Processing failed", { userId: user.id, error: err.stack });
+  res.status(500).json({ error: "An internal error occurred. Please try again." });
+}
+```
+
+### D9. Secure Session Management
+**Search for:** session configuration, cookie settings, token expiry
+**Check:** Sessions accessing personal data use secure flags (HttpOnly, Secure,
+SameSite), have reasonable expiry times, and are invalidated on logout.
+```
+// VIOLATION: Insecure session cookie configuration
+app.use(session({ cookie: { secure: false } }));
+
+// COMPLIANT: Secure session configuration
+app.use(session({
+  cookie: {
+    secure: true,
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 30 * 60 * 1000 // 30 minutes
+  },
+  rolling: true
+}));
+```
+
+### D10. Rate Limiting on Data Endpoints
+**Search for:** rate_limit, throttle, rateLimit on endpoints that serve personal data
+**Check:** Endpoints that serve personal data have rate limiting to prevent bulk
+extraction. Without rate limits, an attacker or rogue insider could scrape all
+personal data records.
+```
+// COMPLIANT: Rate limiting on personal data endpoint
+app.get('/api/users/:id/profile',
+  rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }),
+  authMiddleware,
+  profileController.get
+);
+```
+
 ---
 
 ## E. Breach Notification (DPDPA Section 7d)
@@ -157,6 +269,13 @@ of breaches in the prescribed form.
 **Search for:** runbooks, incident response documentation, on-call configs
 **Check:** A documented incident response plan exists. This is partially a code
 concern (automated detection and notification) and partially organizational.
+
+### E5. Breach Severity Classification
+**Search for:** breach_severity, breach_level, incident_classification, risk_rating
+**Check:** A system exists to classify breaches by severity (e.g., low, medium, high,
+critical) to determine notification urgency and scope. Severity classification drives
+whether the Board and Data Principals must be notified immediately or within standard
+timelines.
 
 ---
 
@@ -180,6 +299,31 @@ the consenter is actually the parent/guardian.
 **Search for:** analytics SDK initialization, ad SDK initialization, tracking pixels
 **Check:** No tracking, behavioural monitoring, or targeted advertising directed
 at children. Check if analytics/ad SDKs are initialized for child accounts.
+
+### F5. Child Account Identification
+**Search for:** is_child, is_minor, child_flag, account_type.*child, age_group in database schemas or models
+**Check:** Child accounts are explicitly flagged in the database so that differential
+processing rules can be enforced. Without an explicit flag, it is difficult to apply
+the stricter requirements of Section 8 at the code level.
+```
+// VIOLATION: No way to distinguish child accounts
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  email TEXT,
+  date_of_birth DATE
+);
+
+// COMPLIANT: Explicit child flag for differential processing
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name TEXT,
+  email TEXT,
+  date_of_birth DATE,
+  is_child BOOLEAN DEFAULT FALSE,
+  parental_consent_verified BOOLEAN DEFAULT FALSE
+);
+```
 
 ---
 
@@ -208,6 +352,23 @@ within the prescribed period (to be specified in rules).
 **Search for:** nominee designation, estate planning features, successor settings
 **Check:** Users can nominate someone to exercise their rights in case of
 death or incapacity. This may be a future requirement — flag as advisory.
+
+### G6. Rights Request Response Tracking
+**Search for:** sla, response_deadline, request_status, days_remaining, due_date in rights/DSAR handling code
+**Check:** A mechanism tracks response times to ensure rights requests are fulfilled
+within the prescribed period. Each request should have a recorded receipt date,
+a calculated deadline, and a status that is monitored for overdue requests.
+```
+// COMPLIANT: DSAR request with SLA tracking
+const dsarRequest = {
+  id: "dsar-2024-001",
+  type: "erasure",
+  receivedAt: "2024-01-15T10:00:00Z",
+  deadline: "2024-02-14T10:00:00Z", // 30-day SLA
+  status: "in_progress",
+  daysRemaining: 15
+};
+```
 
 ---
 
@@ -251,9 +412,61 @@ the Board (when registration mechanism is established).
 
 ---
 
+## K. Legitimate Uses (DPDPA Section 6)
+
+### K1. Voluntary Data Provision
+**Search for:** terms of service acceptance, voluntary submission forms, user-initiated data sharing
+**Check:** When a Data Principal voluntarily provides data for a specific purpose
+(e.g., filling a form for a service), processing is permitted without separate consent
+— but only for that stated purpose. Verify that voluntarily provided data is not
+repurposed beyond the original stated purpose.
+```
+// VIOLATION: Voluntarily submitted support ticket data repurposed for marketing
+const handleSupportTicket = (ticket) => {
+  saveTicket(ticket);
+  marketingService.addLead(ticket.email, ticket.name); // repurposing
+};
+
+// COMPLIANT: Data used only for the stated purpose
+const handleSupportTicket = (ticket) => {
+  saveTicket(ticket);
+  // email and name used only for support resolution
+};
+```
+
+### K2. State Function Processing
+**Search for:** government integrations, public service APIs, statutory function handlers
+**Check (advisory):** Processing for functions of the State — subsidies, benefits,
+licenses, permits — is a legitimate use under Section 6. If your application integrates
+with government services, document the statutory basis for each integration and ensure
+data processed under this ground is not used for unrelated purposes.
+
+### K3. Legal Obligation Processing
+**Search for:** court order handlers, legal hold mechanisms, regulatory compliance, statutory retention
+**Check (advisory):** Processing required by law (court orders, regulatory requirements)
+is a legitimate use under Section 6. Check that legal holds prevent deletion of data
+subject to legal proceedings, and that the legal basis is documented for each such
+processing activity.
+```
+// COMPLIANT: Legal hold prevents deletion of data under court order
+const handleDeletionRequest = async (userId) => {
+  const legalHold = await checkLegalHold(userId);
+  if (legalHold.active) {
+    logger.info("Deletion deferred due to legal hold", { userId, holdId: legalHold.id });
+    return { status: "deferred", reason: "legal_hold" };
+  }
+  await deleteUserData(userId);
+  return { status: "completed" };
+};
+```
+
+---
+
 ## Scoring Guide
 
-Calculate compliance score as: (PASS items / (Total items - NOT APPLICABLE items)) × 100
+Calculate compliance score as: (PASS items / (Total items - NOT APPLICABLE items)) x 100
+
+This checklist contains 52 items across 11 sections (A through K).
 
 | Score | Rating |
 |-------|--------|
