@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-compatible-orange)](https://agentskills.io/)
 
+![DPDPA Compliance Skill — Navigate Regulations, Build Trust](docs/assets/banner.jpg)
+
 An [Agent Skill](https://agentskills.io/) that helps coding agents audit, implement, and
 remediate compliance with India's **Digital Personal Data Protection Act, 2023 (DPDPA)**.
 
