@@ -9,7 +9,7 @@ with actionable next steps.
 
 ## 1. Data Protection Officer (DPO) Appointment
 
-**DPDPA Section 7f, 10.2a**
+**DPDPA Section 7f, 10.2a | Rule 9**
 
 ### Who Needs a DPO?
 
@@ -23,6 +23,8 @@ with actionable next steps.
 - Add DPO contact information to the application (footer, settings, privacy page)
 - Create a grievance submission form routed to the DPO
 - Set up email routing to the DPO address
+- Ensure DPO/contact person info is prominently published on website AND app (Rule 9 — mandatory)
+- Include contact info in every response to Data Principal rights communications (Rule 9)
 
 ### What Requires Human Action
 
@@ -49,11 +51,17 @@ with actionable next steps.
 
 ## 2. Data Protection Impact Assessment (DPIA)
 
-**DPDPA Section 10.2c**
+**DPDPA Section 10.2c | Rule 13**
 
 ### Who Needs a DPIA?
 
 Significant Data Fiduciaries must undertake periodic DPIAs.
+
+Under Rule 13(1), Significant Data Fiduciaries must complete a DPIA AND audit **once every 12 months** from the date of notification as SDF. The person conducting the DPIA and audit must furnish a report of significant observations to the Board (Rule 13(2)).
+
+Additionally, SDFs must verify that algorithmic software used for processing personal data does not pose a risk to Data Principals' rights (Rule 13(3)).
+
+SDFs may be required to ensure specified personal data is processed with data localization restrictions (Rule 13(4)).
 
 ### What Coding Agents Can Do
 
@@ -116,7 +124,7 @@ Significant Data Fiduciaries must undertake periodic DPIAs.
 
 ## 3. Data Processing Agreements (DPAs)
 
-**DPDPA Section 7.2**
+**DPDPA Section 7.2 | Rule 6(f)**
 
 ### The Obligation
 
@@ -134,6 +142,8 @@ This means contractual safeguards are essential.
 - Negotiating and executing DPAs with each processor
 - Ensuring DPAs include: processing scope, security obligations, breach notification
   obligations, sub-processor approval requirements, data return/deletion on termination
+- Reasonable security safeguards as mandated by Rule 6, including encryption/obfuscation/masking,
+  access controls, logging with 1-year minimum retention, backup measures, and technical/organisational measures
 - Periodic review of processor compliance
 
 ### Data Processor Inventory Template
@@ -149,7 +159,7 @@ This means contractual safeguards are essential.
 
 ## 4. Breach Response Playbook
 
-**DPDPA Section 7d**
+**DPDPA Section 7d | Rule 7**
 
 ### The Obligation
 
@@ -187,12 +197,24 @@ PHASE 2: CONTAINMENT (1-4 hours)
 ├── Assess scope: what data, how many users
 └── Document all actions taken
 
-PHASE 3: NOTIFICATION (As prescribed — err on speed)
-├── Prepare Board notification (prescribed form TBD)
-├── Prepare Data Principal notifications
+PHASE 3: NOTIFICATION (Rule 7 — strict timelines)
+├── IMMEDIATE: Notify Board with breach description, nature, extent, timing, location, likely impact (Rule 7(2)(a))
+├── IMMEDIATE: Notify each affected Data Principal via user account or registered communication with:
+│   ├── Description of breach (nature, extent, timing) (Rule 7(1)(a))
+│   ├── Consequences likely to arise (Rule 7(1)(b))
+│   ├── Mitigation measures taken/planned (Rule 7(1)(c))
+│   ├── Safety measures the DP can take (Rule 7(1)(d))
+│   └── Business contact info for queries (Rule 7(1)(e))
+├── WITHIN 72 HOURS: Submit detailed report to Board containing:
+│   ├── Updated and detailed breach description (Rule 7(2)(b)(i))
+│   ├── Broad facts of events and circumstances (Rule 7(2)(b)(ii))
+│   ├── Measures implemented or proposed (Rule 7(2)(b)(iii))
+│   ├── Findings regarding the person who caused breach (Rule 7(2)(b)(iv))
+│   ├── Remedial measures to prevent recurrence (Rule 7(2)(b)(v))
+│   └── Report of intimations given to affected DPs (Rule 7(2)(b)(vi))
 ├── Notify DPO
-├── Legal counsel review of notifications
-└── Send notifications
+├── Legal counsel review
+└── Send all notifications
 
 PHASE 4: RECOVERY (Days)
 ├── Remediate vulnerability
@@ -254,10 +276,32 @@ Principals manage consent across services):
 - Ensure the platform is accessible, transparent, and interoperable
 - Maintain records of all consent transactions
 
-### Status
+### Registration Requirements (Rule 4 + First Schedule Part A)
 
-As of the knowledge cutoff, the Board has not yet been constituted and registration
-procedures have not been prescribed. Monitor MeitY announcements.
+The DPDP Rules 2025 prescribe detailed registration conditions:
+1. Must be a company incorporated in India
+2. Net worth not less than Rs. 2 crore
+3. Sound financial condition and management character
+4. Directors and key personnel must have reputation for fairness and integrity
+5. Platform must be independently certified for data protection standards
+6. Board may inquire and register, or reject with reasons
+7. Board may suspend/cancel registration for non-adherence
+
+### Obligations (First Schedule Part B — 13 obligations)
+
+1. Enable Data Principals to give consent directly or through another DF on the platform
+2. Ensure personal data content is not readable by the Consent Manager
+3. Maintain records of: consents given/denied/withdrawn, notices, data sharing
+4. Give Data Principals access to records; provide in machine-readable form on request
+5. Maintain records for at least 7 years (or longer if agreed/required by law)
+6. Develop and maintain website/app as primary access means
+7. No sub-contracting or assignment of obligations
+8. Take reasonable security safeguards
+9. Act in fiduciary capacity to Data Principals
+10. Avoid conflict of interest with Data Fiduciaries
+11. Publish promoter, director, key personnel info and >2% shareholders
+12. Maintain effective audit mechanisms and report to Board
+13. No transfer of control without Board approval
 
 ---
 
@@ -277,12 +321,12 @@ The Central Government considers:
 
 ### If Designated
 
-Additional obligations include:
-1. Appoint India-based DPO
-2. Appoint independent data auditor
-3. Conduct periodic DPIAs
-4. Undertake periodic audits
-5. Other measures as prescribed
+Additional obligations (Rule 13):
+1. Annual DPIA + audit (every 12 months from SDF notification date)
+2. Report significant observations to the Board (Rule 13(2))
+3. Algorithmic risk assessment — verify technical measures including algorithmic software do not pose risk to DP rights (Rule 13(3))
+4. Potential data localization — process specified personal data with restriction that data and traffic data not transferred outside India (Rule 13(4), on Central Government committee recommendation)
+5. Appoint India-based DPO (Section 10 + Rule 9)
 
 ### What Coding Agents Can Do
 
@@ -297,10 +341,9 @@ Additional obligations include:
 
 **DPDPA Section 16**
 
-### Current Status
+### Framework (Rule 15)
 
-The Central Government has not yet issued notifications restricting transfer to specific
-countries. Until then, transfers are generally permitted.
+Under Rule 15, personal data may be transferred outside India subject to requirements the Central Government may specify regarding making data available to foreign States, or persons/entities under their control. This is a more permissive framework than initially expected — transfers are allowed unless specifically restricted.
 
 ### Proactive Measures
 
@@ -359,6 +402,67 @@ If your app processes data on behalf of or in partnership with government entiti
 - You (as Data Processor) are still bound by your obligations
 - Security safeguards and breach notification are always required
 - Document the legal basis for any exemption relied upon
+
+---
+
+## 11. Data Retention Requirements
+
+**DPDPA Section 7(e) | Rule 8 + Third Schedule**
+
+### Mandatory Retention Periods (Third Schedule)
+
+| Platform Type | Threshold | Retention Period |
+|---------------|-----------|-----------------|
+| E-commerce entity | ≥2 crore registered users in India | 3 years from last DP contact or Rules commencement, whichever is latest |
+| Online gaming intermediary | ≥50 lakh registered users in India | 3 years from last DP contact or Rules commencement, whichever is latest |
+| Social media intermediary | ≥2 crore registered users in India | 3 years from last DP contact or Rules commencement, whichever is latest |
+
+**Exceptions:** Account access and virtual tokens (wallets, stored value) are exempt from the 3-year erasure requirement.
+
+### Minimum Log Retention (Rule 6(e) + Rule 8(3))
+
+All Data Fiduciaries must retain personal data, associated traffic data, and processing logs for a **minimum of 1 year** from the date of processing, for purposes specified in the Seventh Schedule.
+
+### 48-Hour Pre-Erasure Notice (Rule 8(2))
+
+At least **48 hours before** erasing personal data under retention rules, the Data Fiduciary must inform the Data Principal that their data will be erased upon completion of the period, unless they:
+- Log into their user account, OR
+- Otherwise initiate contact for the specified purpose, OR
+- Exercise their rights under the Act
+
+### What Coding Agents Can Do
+
+- Implement retention period tracking with automatic erasure scheduling
+- Build pre-erasure notification pipeline (48-hour advance warning)
+- Configure log retention policies (minimum 1 year)
+- Create dashboards showing data approaching retention limits
+
+---
+
+## 12. Grievance Redressal SLA
+
+**DPDPA Section 13 | Rule 14(3)**
+
+### The 90-Day Requirement
+
+Every Data Fiduciary and Consent Manager must publish on its website/app a grievance redressal system that responds to Data Principal grievances within a **maximum of 90 days**. They must implement appropriate technical and organisational measures to ensure effectiveness within this period.
+
+### Rights Exercise Mechanism (Rule 14(1-2))
+
+Data Fiduciaries must prominently publish:
+- The means for exercising Data Principal rights (Rule 14(1)(a))
+- Required identifiers (username, customer ID, etc.) for verification (Rule 14(1)(b))
+
+### Nomination Mechanism (Rule 14(4))
+
+Data Principals may nominate one or more individuals to exercise their rights, in accordance with the DF's terms of service and applicable law.
+
+### What Coding Agents Can Do
+
+- Implement 90-day SLA tracking on all grievance submissions
+- Build automated reminders/escalations as deadlines approach
+- Create rights exercise portal with clear means and identifier requirements
+- Implement nomination management system
 
 ---
 

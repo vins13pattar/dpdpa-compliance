@@ -810,3 +810,699 @@ Regardless of framework, always ensure:
 7. **Children's age gate exists** — and blocks tracking/ads for under-18s
 8. **DPO contact is published** — visible in app footer, settings, or help section
 9. **Grievance mechanism is reachable** — within 2-3 taps from any screen
+
+---
+
+## Pattern 7: 72-Hour Board Breach Notification (Rule 7)
+
+**DPDP Rules 2025 — Rule 7(1), 7(2)**
+
+### Database Schema
+
+```sql
+-- Breach incident tracking for Board notification
+CREATE TABLE breach_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    breach_detected_at TIMESTAMPTZ NOT NULL,
+    board_initial_notified_at TIMESTAMPTZ,         -- Rule 7(2)(a): without delay
+    board_detailed_report_at TIMESTAMPTZ,           -- Rule 7(2)(b): within 72 hours
+    board_deadline TIMESTAMPTZ NOT NULL,            -- breach_detected_at + 72 hours
+    nature TEXT NOT NULL,
+    extent TEXT,
+    timing_of_occurrence TIMESTAMPTZ,
+    location_of_occurrence TEXT,
+    likely_impact TEXT,
+    events_and_circumstances TEXT,                  -- Rule 7(2)(b)(ii)
+    mitigation_measures TEXT,                       -- Rule 7(2)(b)(iii)
+    findings_regarding_person TEXT,                 -- Rule 7(2)(b)(iv)
+    remedial_measures TEXT,                         -- Rule 7(2)(b)(v)
+    dp_notification_report TEXT,                    -- Rule 7(2)(b)(vi)
+    status VARCHAR(30) CHECK (status IN ('detected', 'initial_notified', 'detailed_submitted', 'closed')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Individual DP notifications per Rule 7(1)
+CREATE TABLE breach_dp_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    breach_id UUID NOT NULL REFERENCES breach_reports(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    notification_channel VARCHAR(50) NOT NULL,      -- 'user_account', 'email', 'sms'
+    breach_description TEXT NOT NULL,               -- Rule 7(1)(a)
+    consequences TEXT NOT NULL,                     -- Rule 7(1)(b)
+    mitigation_measures TEXT,                       -- Rule 7(1)(c)
+    safety_measures TEXT,                           -- Rule 7(1)(d)
+    contact_info TEXT NOT NULL,                     -- Rule 7(1)(e)
+    sent_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Node.js/Express — Breach Notification Service
+
+```javascript
+// services/breachNotification.js
+// DPDP Rules 2025 — Rule 7: Breach notification to Board and Data Principals
+
+const BOARD_DEADLINE_HOURS = 72;
+
+class BreachNotificationService {
+  constructor(db, notificationService, boardApiClient) {
+    this.db = db;
+    this.notifier = notificationService;
+    this.boardApi = boardApiClient;
+  }
+
+  async reportBreach({ nature, extent, timing, location, likelyImpact, affectedUserIds }) {
+    const detectedAt = new Date();
+    const deadline = new Date(detectedAt.getTime() + BOARD_DEADLINE_HOURS * 60 * 60 * 1000);
+
+    // Create breach record
+    const breach = await this.db.query(
+      `INSERT INTO breach_reports (breach_detected_at, board_deadline, nature, extent,
+       timing_of_occurrence, location_of_occurrence, likely_impact, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'detected') RETURNING *`,
+      [detectedAt, deadline, nature, extent, timing, location, likelyImpact]
+    );
+
+    // Rule 7(2)(a): Notify Board without delay — initial description
+    await this.notifyBoardInitial(breach.rows[0]);
+
+    // Rule 7(1): Notify affected Data Principals without delay
+    await this.notifyDataPrincipals(breach.rows[0], affectedUserIds);
+
+    // Schedule 72-hour detailed report deadline reminder
+    await this.scheduleDetailedReport(breach.rows[0].id, deadline);
+
+    return breach.rows[0];
+  }
+
+  async notifyBoardInitial(breach) {
+    // Rule 7(2)(a): without delay — description, nature, extent, timing, location, likely impact
+    await this.boardApi.submitInitialNotification({
+      breachId: breach.id,
+      description: breach.nature,
+      extent: breach.extent,
+      timing: breach.timing_of_occurrence,
+      location: breach.location_of_occurrence,
+      likelyImpact: breach.likely_impact,
+    });
+
+    await this.db.query(
+      `UPDATE breach_reports SET board_initial_notified_at = NOW(), status = 'initial_notified'
+       WHERE id = $1`, [breach.id]
+    );
+  }
+
+  async notifyDataPrincipals(breach, userIds) {
+    // Rule 7(1): notify each affected DP via user account or registered communication
+    for (const userId of userIds) {
+      const notification = {
+        breach_description: `${breach.nature}. Extent: ${breach.extent}. Occurred: ${breach.timing_of_occurrence}`,
+        consequences: breach.likely_impact,
+        mitigation_measures: 'Our security team is actively investigating and implementing safeguards.',
+        safety_measures: 'We recommend changing your password and monitoring your account for unusual activity.',
+        contact_info: process.env.DPO_CONTACT_INFO,
+      };
+
+      await this.db.query(
+        `INSERT INTO breach_dp_notifications
+         (breach_id, user_id, notification_channel, breach_description, consequences,
+          mitigation_measures, safety_measures, contact_info, sent_at)
+         VALUES ($1, $2, 'user_account', $3, $4, $5, $6, $7, NOW())`,
+        [breach.id, userId, notification.breach_description, notification.consequences,
+         notification.mitigation_measures, notification.safety_measures, notification.contact_info]
+      );
+
+      await this.notifier.sendToUser(userId, {
+        type: 'breach_notification',
+        ...notification,
+      });
+    }
+  }
+
+  async submitDetailedReport(breachId, details) {
+    // Rule 7(2)(b): within 72 hours — detailed report with 6 sub-items
+    const breach = await this.db.query('SELECT * FROM breach_reports WHERE id = $1', [breachId]);
+    if (new Date() > new Date(breach.rows[0].board_deadline)) {
+      console.error(`WARNING: 72-hour deadline exceeded for breach ${breachId}`);
+    }
+
+    await this.boardApi.submitDetailedReport({
+      breachId,
+      updatedDescription: details.updatedDescription,       // (i)
+      eventsAndCircumstances: details.eventsAndCircumstances, // (ii)
+      mitigationMeasures: details.mitigationMeasures,       // (iii)
+      findingsRegardingPerson: details.findingsRegardingPerson, // (iv)
+      remedialMeasures: details.remedialMeasures,           // (v)
+      dpNotificationReport: details.dpNotificationReport,   // (vi)
+    });
+
+    await this.db.query(
+      `UPDATE breach_reports SET board_detailed_report_at = NOW(), status = 'detailed_submitted',
+       events_and_circumstances = $2, mitigation_measures = $3, findings_regarding_person = $4,
+       remedial_measures = $5, dp_notification_report = $6 WHERE id = $1`,
+      [breachId, details.eventsAndCircumstances, details.mitigationMeasures,
+       details.findingsRegardingPerson, details.remedialMeasures, details.dpNotificationReport]
+    );
+  }
+}
+
+module.exports = { BreachNotificationService };
+```
+
+---
+
+## Pattern 8: 48-Hour Pre-Erasure Notification (Rule 8)
+
+**DPDP Rules 2025 — Rule 8(1), 8(2), 8(3) + Third Schedule**
+
+### Database Schema
+
+```sql
+-- Data retention tracking for Third Schedule compliance
+CREATE TABLE data_retention_tracking (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    platform_type VARCHAR(50) NOT NULL CHECK (platform_type IN ('e_commerce', 'online_gaming', 'social_media', 'other')),
+    last_contact_at TIMESTAMPTZ NOT NULL,           -- last DP approach/rights exercise
+    retention_period_years INTEGER NOT NULL DEFAULT 3,
+    erasure_due_at TIMESTAMPTZ NOT NULL,            -- last_contact_at + retention_period
+    pre_erasure_notified_at TIMESTAMPTZ,            -- Rule 8(2): 48h before erasure
+    erasure_completed_at TIMESTAMPTZ,
+    status VARCHAR(30) CHECK (status IN ('active', 'approaching_erasure', 'notified', 'erasure_deferred', 'erased')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Node.js — Retention and Pre-Erasure Service
+
+```javascript
+// services/dataRetention.js
+// DPDP Rules 2025 — Rule 8: Retention periods and pre-erasure notification
+
+const RETENTION_YEARS = {
+  e_commerce: 3,     // Third Schedule: ≥2Cr users
+  online_gaming: 3,  // Third Schedule: ≥50L users
+  social_media: 3,   // Third Schedule: ≥2Cr users
+  other: 1,          // Rule 8(3): minimum 1-year log retention
+};
+
+const PRE_ERASURE_NOTICE_HOURS = 48; // Rule 8(2)
+
+class DataRetentionService {
+  constructor(db, notifier) {
+    this.db = db;
+    this.notifier = notifier;
+  }
+
+  // Run daily via cron job
+  async processRetentionSchedule() {
+    const now = new Date();
+    const noticeThreshold = new Date(now.getTime() + PRE_ERASURE_NOTICE_HOURS * 60 * 60 * 1000);
+
+    // Find records approaching erasure (within 48 hours) that haven't been notified
+    const approaching = await this.db.query(
+      `SELECT * FROM data_retention_tracking
+       WHERE status = 'active' AND erasure_due_at <= $1 AND pre_erasure_notified_at IS NULL`,
+      [noticeThreshold]
+    );
+
+    // Rule 8(2): Send 48-hour pre-erasure notice
+    for (const record of approaching.rows) {
+      await this.notifier.sendToUser(record.user_id, {
+        type: 'pre_erasure_notice',
+        message: 'Your personal data will be erased in 48 hours unless you log in or contact us.',
+        erasure_date: record.erasure_due_at,
+        actions: [
+          'Log into your account to retain your data',
+          'Contact us for any data-related requests',
+          'Exercise your rights under DPDPA',
+        ],
+      });
+
+      await this.db.query(
+        `UPDATE data_retention_tracking SET pre_erasure_notified_at = NOW(), status = 'notified'
+         WHERE id = $1`, [record.id]
+      );
+    }
+
+    // Process actual erasures for records past their due date where notice was sent
+    const dueForErasure = await this.db.query(
+      `SELECT * FROM data_retention_tracking
+       WHERE status = 'notified' AND erasure_due_at <= $1`, [now]
+    );
+
+    for (const record of dueForErasure.rows) {
+      await this.eraseUserData(record.user_id);
+      await this.db.query(
+        `UPDATE data_retention_tracking SET erasure_completed_at = NOW(), status = 'erased'
+         WHERE id = $1`, [record.id]
+      );
+    }
+  }
+
+  // When user logs in or contacts, reset the retention clock
+  async recordUserContact(userId) {
+    const now = new Date();
+    await this.db.query(
+      `UPDATE data_retention_tracking
+       SET last_contact_at = $1,
+           erasure_due_at = $1 + (retention_period_years || ' years')::interval,
+           status = 'active', pre_erasure_notified_at = NULL
+       WHERE user_id = $2 AND status IN ('active', 'approaching_erasure', 'notified')`,
+      [now, userId]
+    );
+  }
+}
+
+module.exports = { DataRetentionService };
+```
+
+---
+
+## Pattern 9: Verifiable Parental Consent (Rule 10)
+
+**DPDP Rules 2025 — Rule 10 + Illustrations**
+
+### Node.js/Express — Parental Consent Verification
+
+```javascript
+// middleware/parentalConsent.js
+// DPDP Rules 2025 — Rule 10: Verifiable consent for child's data
+
+const CONSENT_CASES = {
+  CASE_1: 'registered_parent',     // Parent is registered user, has identity on file
+  CASE_2: 'unregistered_parent',   // Parent not registered, verify via govt/Digital Locker
+  CASE_3: 'parent_opening_registered',  // Parent opening account for child, already registered
+  CASE_4: 'parent_opening_unregistered', // Parent opening account for child, not registered
+};
+
+class ParentalConsentService {
+  constructor(db, identityVerifier, digitalLockerClient) {
+    this.db = db;
+    this.verifier = identityVerifier;
+    this.digitalLocker = digitalLockerClient;
+  }
+
+  async verifyParentalConsent(childData, parentData) {
+    // Rule 10(1): Verify parent is an identifiable adult (≥18 years)
+    const consentCase = this.determineCase(parentData);
+
+    switch (consentCase) {
+      case CONSENT_CASES.CASE_1:
+        // Parent is registered user — check reliable identity and age on file
+        return await this.verifyRegisteredParent(parentData.userId);
+
+      case CONSENT_CASES.CASE_2:
+        // Parent not registered — verify via authorised entity or Digital Locker
+        return await this.verifyUnregisteredParent(parentData);
+
+      case CONSENT_CASES.CASE_3:
+        // Parent opening for child, already registered
+        return await this.verifyRegisteredParent(parentData.userId);
+
+      case CONSENT_CASES.CASE_4:
+        // Parent opening for child, not registered — verify via govt/Digital Locker
+        return await this.verifyUnregisteredParent(parentData);
+    }
+  }
+
+  async verifyRegisteredParent(parentUserId) {
+    // Rule 10(1)(a): reliable details of identity and age available with DF
+    const parent = await this.db.query(
+      'SELECT id, date_of_birth, identity_verified FROM users WHERE id = $1',
+      [parentUserId]
+    );
+
+    if (!parent.rows[0]) throw new Error('Parent user not found');
+
+    const age = this.calculateAge(parent.rows[0].date_of_birth);
+    if (age < 18) throw new Error('Parent must be an adult (18+)');
+    if (!parent.rows[0].identity_verified) throw new Error('Parent identity not verified');
+
+    return { verified: true, method: 'registered_user_identity', parentUserId };
+  }
+
+  async verifyUnregisteredParent(parentData) {
+    // Rule 10(1)(b): identity via authorised entity or virtual token (Digital Locker)
+    if (parentData.digitalLockerId) {
+      // Verify via Digital Locker service provider
+      const result = await this.digitalLocker.verifyIdentity(parentData.digitalLockerId);
+      if (!result.isAdult) throw new Error('Parent must be an adult (18+)');
+      return { verified: true, method: 'digital_locker', verificationId: result.id };
+    }
+
+    // Verify via government-authorised entity
+    const result = await this.verifier.verifyViaAuthorisedEntity({
+      name: parentData.name,
+      identityDocument: parentData.identityDocument,
+    });
+
+    if (!result.isAdult) throw new Error('Parent must be an adult (18+)');
+    return { verified: true, method: 'authorised_entity', verificationId: result.id };
+  }
+
+  calculateAge(dateOfBirth) {
+    const today = new Date();
+    const birth = new Date(dateOfBirth);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  }
+}
+
+module.exports = { ParentalConsentService, CONSENT_CASES };
+```
+
+### React — Age Gate with Parental Consent Flow
+
+```jsx
+// components/AgeGateWithConsent.jsx
+// DPDP Rules 2025 — Rule 10: Verifiable parental consent UI
+
+import { useState } from 'react';
+
+function AgeGateWithConsent({ onVerified, onParentalConsentRequired }) {
+  const [step, setStep] = useState('age_check'); // age_check | parent_identify | verify
+
+  const handleAgeSubmit = (dateOfBirth) => {
+    const age = calculateAge(dateOfBirth);
+    if (age >= 18) {
+      onVerified({ isChild: false });
+    } else {
+      // Child detected — require parental consent per Rule 10
+      setStep('parent_identify');
+    }
+  };
+
+  return (
+    <div className="age-gate">
+      {step === 'age_check' && (
+        <AgeCheckForm onSubmit={handleAgeSubmit} />
+      )}
+      {step === 'parent_identify' && (
+        <ParentIdentificationForm
+          onRegisteredParent={(parentUserId) => {
+            // Case 1 or 3: Parent is registered user
+            onParentalConsentRequired({ case: 'registered', parentUserId });
+          }}
+          onUnregisteredParent={() => {
+            // Case 2 or 4: Parent needs verification via Digital Locker or govt entity
+            setStep('verify');
+          }}
+        />
+      )}
+      {step === 'verify' && (
+        <DigitalLockerVerification
+          onVerified={(verificationResult) => {
+            onParentalConsentRequired({ case: 'unregistered', verification: verificationResult });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default AgeGateWithConsent;
+```
+
+---
+
+## Pattern 10: 90-Day Grievance SLA Tracking (Rule 14)
+
+**DPDP Rules 2025 — Rule 14(1), 14(3)**
+
+### Database Schema
+
+```sql
+-- Grievance tracking with 90-day SLA per Rule 14(3)
+CREATE TABLE grievances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    identifier VARCHAR(255) NOT NULL,               -- Rule 14(1)(b): username, customer ID, etc.
+    type VARCHAR(50) NOT NULL CHECK (type IN ('access', 'correction', 'erasure', 'grievance', 'nomination', 'other')),
+    description TEXT NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deadline_at TIMESTAMPTZ NOT NULL,               -- received_at + 90 days (Rule 14(3))
+    responded_at TIMESTAMPTZ,
+    response TEXT,
+    status VARCHAR(30) CHECK (status IN ('received', 'in_progress', 'responded', 'overdue', 'closed')),
+    days_remaining INTEGER GENERATED ALWAYS AS (
+        GREATEST(0, EXTRACT(DAY FROM deadline_at - CURRENT_TIMESTAMP)::INTEGER)
+    ) STORED,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Auto-set deadline to 90 days from receipt
+CREATE OR REPLACE FUNCTION set_grievance_deadline()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.deadline_at := NEW.received_at + INTERVAL '90 days';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_grievance_deadline
+    BEFORE INSERT ON grievances
+    FOR EACH ROW EXECUTE FUNCTION set_grievance_deadline();
+```
+
+### Node.js/Express — Grievance API with SLA Enforcement
+
+```javascript
+// routes/grievances.js
+// DPDP Rules 2025 — Rule 14(3): 90-day grievance response SLA
+
+const express = require('express');
+const router = express.Router();
+
+const GRIEVANCE_SLA_DAYS = 90;
+
+// Rule 14(1): Published means for exercising rights
+router.get('/rights/means', (req, res) => {
+  res.json({
+    grievance_submission: '/api/grievances',
+    data_access_request: '/api/rights/access',
+    data_correction_request: '/api/rights/correction',
+    data_erasure_request: '/api/rights/erasure',
+    nomination: '/api/rights/nomination',
+    required_identifiers: ['username', 'email', 'customer_id'], // Rule 14(1)(b)
+    response_sla_days: GRIEVANCE_SLA_DAYS,
+    dpo_contact: process.env.DPO_CONTACT_INFO,
+  });
+});
+
+// Submit a grievance
+router.post('/grievances', authMiddleware, async (req, res) => {
+  const { type, description, identifier } = req.body;
+  const userId = req.user.id;
+
+  const result = await db.query(
+    `INSERT INTO grievances (user_id, identifier, type, description, status)
+     VALUES ($1, $2, $3, $4, 'received') RETURNING *`,
+    [userId, identifier || req.user.username, type, description]
+  );
+
+  const grievance = result.rows[0];
+
+  // Acknowledge receipt with deadline info
+  res.status(201).json({
+    grievance_id: grievance.id,
+    status: 'received',
+    received_at: grievance.received_at,
+    deadline: grievance.deadline_at,
+    message: `Your ${type} request has been received. We will respond within 90 days as required under DPDPA Rule 14(3).`,
+  });
+});
+
+// Check overdue grievances (run via cron daily)
+router.post('/grievances/check-sla', adminAuthMiddleware, async (req, res) => {
+  const overdue = await db.query(
+    `UPDATE grievances SET status = 'overdue'
+     WHERE status IN ('received', 'in_progress') AND deadline_at < NOW()
+     RETURNING *`
+  );
+
+  if (overdue.rows.length > 0) {
+    // Alert DPO about overdue grievances — compliance risk
+    await notifyDPO({
+      type: 'overdue_grievances',
+      count: overdue.rows.length,
+      message: `${overdue.rows.length} grievance(s) have exceeded the 90-day SLA under Rule 14(3).`,
+    });
+  }
+
+  res.json({ overdue_count: overdue.rows.length });
+});
+
+module.exports = router;
+```
+
+---
+
+## Pattern 11: DPO Contact Publication (Rule 9)
+
+**DPDP Rules 2025 — Rule 9**
+
+### React — DPO Contact Component
+
+```jsx
+// components/DPOContact.jsx
+// DPDP Rules 2025 — Rule 9: Prominently publish DPO/contact person info
+
+function DPOContact() {
+  const dpoInfo = {
+    name: process.env.REACT_APP_DPO_NAME || 'Data Protection Officer',
+    email: process.env.REACT_APP_DPO_EMAIL,
+    phone: process.env.REACT_APP_DPO_PHONE,
+    address: process.env.REACT_APP_DPO_ADDRESS,
+  };
+
+  return (
+    // Rule 9: "prominently publish on its website or app"
+    <section id="dpo-contact" aria-label="Data Protection Contact">
+      <h3>Data Protection Officer</h3>
+      <p>
+        For questions about how we process your personal data, or to exercise
+        your rights under the Digital Personal Data Protection Act, 2023:
+      </p>
+      <address>
+        <p><strong>{dpoInfo.name}</strong></p>
+        {dpoInfo.email && <p>Email: <a href={`mailto:${dpoInfo.email}`}>{dpoInfo.email}</a></p>}
+        {dpoInfo.phone && <p>Phone: {dpoInfo.phone}</p>}
+        {dpoInfo.address && <p>Address: {dpoInfo.address}</p>}
+      </address>
+      <p>
+        <a href="/rights">Exercise your data rights</a> |{' '}
+        <a href="/grievance">File a grievance</a> |{' '}
+        <a href="https://dpboard.gov.in" target="_blank" rel="noopener noreferrer">
+          Complain to Data Protection Board
+        </a>
+      </p>
+    </section>
+  );
+}
+
+export default DPOContact;
+```
+
+### Node.js — Include DPO Info in Rights Responses
+
+```javascript
+// middleware/dpoContact.js
+// DPDP Rules 2025 — Rule 9: Include contact info in every rights response
+
+const DPO_INFO = {
+  name: process.env.DPO_NAME,
+  email: process.env.DPO_EMAIL,
+  phone: process.env.DPO_PHONE,
+};
+
+// Rule 9: "mention in every response to a communication for the exercise of
+// the rights of a Data Principal under the Act"
+function attachDPOContact(req, res, next) {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    if (req.path.startsWith('/api/rights') || req.path.startsWith('/api/grievances')) {
+      body.data_protection_contact = DPO_INFO;
+    }
+    return originalJson(body);
+  };
+  next();
+}
+
+module.exports = { attachDPOContact };
+```
+
+---
+
+## Pattern 12: 1-Year Log Retention (Rule 6(e) + Rule 8(3))
+
+**DPDP Rules 2025 — Rule 6(e), Rule 8(3)**
+
+### Node.js — Access Logging with 1-Year Retention
+
+```javascript
+// middleware/dataAccessLogger.js
+// DPDP Rules 2025 — Rule 6(e): Retain logs for minimum 1 year
+
+const LOG_RETENTION_DAYS = 365; // Rule 6(e): minimum 1 year
+
+// Log every access to personal data
+async function logDataAccess(req, res, next) {
+  const startTime = Date.now();
+
+  res.on('finish', async () => {
+    // Only log endpoints that serve personal data
+    if (!isPersonalDataEndpoint(req.path)) return;
+
+    await db.query(
+      `INSERT INTO data_access_logs
+       (user_id, accessor_id, accessor_role, endpoint, method, ip_address,
+        user_agent, response_status, response_time_ms, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW() + INTERVAL '${LOG_RETENTION_DAYS} days')`,
+      [
+        extractDataSubjectId(req),
+        req.user?.id || 'anonymous',
+        req.user?.role || 'public',
+        req.path,
+        req.method,
+        req.ip,
+        req.get('User-Agent'),
+        res.statusCode,
+        Date.now() - startTime,
+      ]
+    );
+  });
+
+  next();
+}
+
+// Cleanup job — run daily, only delete logs older than 1 year
+async function purgeExpiredLogs() {
+  const result = await db.query(
+    `DELETE FROM data_access_logs WHERE expires_at < NOW()`
+  );
+  console.log(`Purged ${result.rowCount} expired access logs (Rule 6(e) compliance)`);
+}
+
+module.exports = { logDataAccess, purgeExpiredLogs };
+```
+
+### Database Schema — Access Logs with Retention
+
+```sql
+-- Data access logs with 1-year minimum retention per Rule 6(e)
+CREATE TABLE data_access_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID,                                    -- data subject whose data was accessed
+    accessor_id VARCHAR(255) NOT NULL,               -- who accessed the data
+    accessor_role VARCHAR(50),
+    endpoint VARCHAR(500) NOT NULL,
+    method VARCHAR(10) NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    response_status INTEGER,
+    response_time_ms INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL                  -- Rule 6(e): minimum NOW() + 1 year
+);
+
+-- Index for efficient cleanup and querying
+CREATE INDEX idx_access_logs_expires ON data_access_logs (expires_at);
+CREATE INDEX idx_access_logs_user ON data_access_logs (user_id, created_at);
+
+-- Traffic data logs per Rule 8(3)
+CREATE TABLE traffic_data_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID,
+    source_ip INET,
+    destination_service VARCHAR(255),
+    data_volume_bytes BIGINT,
+    protocol VARCHAR(20),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL                  -- Rule 8(3): minimum 1 year
+);
+```

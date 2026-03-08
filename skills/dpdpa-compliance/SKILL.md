@@ -106,6 +106,7 @@ Before or at the time of collecting data, provide notice containing:
 - Description of personal data being collected and purpose
 - How to exercise rights (withdrawal, correction, erasure)
 - How to file a complaint with the Data Protection Board
+- Communication link for accessing website/app to withdraw consent, exercise rights, or complain (Rule 3(c))
 
 **What to look for in code:**
 - Data collection without prior notice display → violation
@@ -139,6 +140,9 @@ Processing is allowed without consent for:
 - No breach detection/notification system → violation
 - No data retention policy or auto-deletion → violation
 - No DPO contact displayed → violation
+- No 72-hour breach notification to Board mechanism → violation (Rule 7(2))
+- No 48-hour pre-erasure notification to Data Principals → violation (Rule 8(2))
+- Logs retained less than 1 year → violation (Rule 6(e))
 
 ### 5. Children's Data (Section 8)
 
@@ -151,6 +155,8 @@ Processing is allowed without consent for:
 - No age verification gate → violation
 - Tracking/analytics on children's sections without parental consent → violation
 - Ad targeting based on children's data → violation
+- No verifiable parental consent mechanism (identity + age verification) → violation (Rule 10)
+- No guardian verification for persons with disability → violation (Rule 11)
 
 ### 6. Data Principal Rights (Sections 11-14)
 
@@ -166,6 +172,9 @@ Implement mechanisms for:
 - No correction/update mechanism beyond profile edit → gap
 - No account deletion flow → violation
 - No grievance submission endpoint → violation
+- Grievance response exceeds 90-day SLA → violation (Rule 14(3))
+- No means for exercising rights published on website/app → violation (Rule 14(1))
+- No nomination mechanism for Data Principals → violation (Rule 14(4))
 
 ### 7. Significant Data Fiduciary Obligations (Section 10)
 
@@ -178,11 +187,13 @@ If designated as SDF by the Central Government:
 **What to look for in code:**
 - No audit logging → gap
 - No DPIA tooling integration → gap
+- No annual DPIA and audit process → violation (Rule 13(1))
+- No algorithmic risk assessment for data processing software → violation (Rule 13(3))
+- No report submission mechanism to Board → violation (Rule 13(2))
 
 ### 8. Cross-Border Transfer (Section 16)
 
-The Central Government may restrict transfer to specific countries. Until notified, transfers
-are generally permitted, but good practice is:
+The Central Government may restrict transfer to specific countries. Per Rule 15, transfers are permitted subject to restrictions the Central Government may specify regarding making data available to foreign States or entities under their control. Good practice is:
 - Document where data flows
 - Implement controls to restrict transfer to blocked territories when notified
 - Maintain a data flow map
@@ -233,10 +244,10 @@ Read these when you need deeper guidance:
 - `references/audit-checklist.md` — Detailed 52-point checklist for systematic auditing
 - `references/implementation-patterns.md` — Code patterns for Node.js, Python, React, React Native, Laravel, and database schemas
 - `references/organizational-guidelines.md` — Non-code obligations, DPO requirements, DPIA guidance, breach response playbook
-- `references/dpdpa-full-text.md` — Complete Act text for precise section references
+- `references/dpdpa-full-text.md` — Complete Act text and DPDP Rules 2025 for precise section and rule references
 
 ## Important Notes
 
-- DPDPA is still awaiting rules from the Central Government on many operational details (consent manager registration, breach notification format, cross-border restrictions). Flag this to users when relevant — recommend they monitor the Ministry of Electronics and IT for rule notifications.
+- The DPDP Rules 2025 were gazetted on 13 November 2025, operationalising the Act. Rules 1, 2, 17-21 are effective immediately; Rule 4 (Consent Managers) after 1 year; Rules 3, 5-16, 22-23 after 18 months. The rules prescribe specific requirements for consent notices (Rule 3), consent manager registration (Rule 4 + First Schedule), security safeguards (Rule 6), breach notification timelines (Rule 7 — 72 hours to Board), data retention periods (Rule 8 + Third Schedule — 3 years for large platforms), DPO contact publication (Rule 9), verifiable parental consent (Rule 10), children's data exemptions (Rule 12 + Fourth Schedule), SDF obligations (Rule 13 — annual DPIA + audit, algorithmic risk assessment), Data Principal rights procedures (Rule 14 — 90-day grievance SLA), and cross-border transfer framework (Rule 15).
 - This skill provides technical compliance guidance, not legal advice. Always recommend users consult qualified legal counsel for definitive compliance opinions.
 - When in doubt about whether something violates the Act, err on the side of caution and flag it as a potential issue.
