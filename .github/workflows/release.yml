@@ -1,8 +1,11 @@
 name: Release
 
-# Push a version tag (git tag v2.1.0 && git push origin v2.1.0) to:
-#   1. create the GitHub Release with generated notes
-#   2. build the Python package and publish it to PyPI
+# Two ways to cut a release:
+#   1. Push a version tag:  git tag v2.1.0 && git push origin v2.1.0
+#   2. Run this workflow manually (Actions → Release → Run workflow) with the
+#      tag name — the tag is created on the target commit if it doesn't exist.
+# Either way it creates the GitHub Release with generated notes, then builds
+# the Python package and publishes it to PyPI.
 #
 # PyPI uses trusted publishing (OIDC) — no token secrets. One-time setup on
 # https://pypi.org → your account → Publishing → add a "pending publisher":
@@ -14,6 +17,11 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v2.1.0); created if it does not exist'
+        required: true
 
 jobs:
   github-release:
@@ -22,14 +30,19 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Create GitHub Release
+      - name: Create GitHub Release (idempotent)
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes \
-            --verify-tag
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping."
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --generate-notes \
+              --target "$GITHUB_SHA"
+          fi
 
   pypi:
     needs: github-release
@@ -50,3 +63,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/dist
+          skip-existing: true
