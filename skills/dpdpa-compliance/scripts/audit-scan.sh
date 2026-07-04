@@ -741,7 +741,7 @@ fi
 
 # --- G4: No grievance mechanism ---
 echo "  [G4] Checking for grievance mechanism..." >&2
-GRIEVANCE=$(search_code_ext 'grievance|complaint|dpo|data.protection.officer|grievance_redressal|grievance_officer|raise.*complaint|file.*grievance')
+GRIEVANCE=$(search_code_ext 'grievance|complaint|\bdpo\b|data.protection.officer|grievance_redressal|grievance_officer|raise.*complaint|file.*grievance')
 
 if [ -z "$GRIEVANCE" ]; then
   finding "HIGH" "G4" "No grievance redressal mechanism found" \

@@ -1,0 +1,10 @@
+# Test fixture: CI config carrying a SAST signal for scanner check D6.
+name: fixture-ci
+on: push
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: semgrep scan
+        run: semgrep ci

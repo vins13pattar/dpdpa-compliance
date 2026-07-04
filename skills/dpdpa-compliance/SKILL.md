@@ -242,11 +242,21 @@ When producing an audit report, use this structure:
 Read these when you need deeper guidance:
 
 - `references/audit-checklist.md` — Detailed 52-point checklist for systematic auditing
-- `references/implementation-patterns.md` — Code patterns for Node.js, Python, React, React Native, Laravel, and database schemas
+- `references/implementation-patterns.md` — Code patterns for Node.js, Python, React, React Native, Laravel, database schemas, and Consent Manager integration
+- `references/implementation-patterns-go-rails-spring.md` — Code patterns for Go, Ruby on Rails, and Spring Boot
 - `references/organizational-guidelines.md` — Non-code obligations, DPO requirements, DPIA guidance, breach response playbook
 - `references/dpdpa-full-text.md` — Complete Act text and DPDP Rules 2025 for precise section and rule references
 
 ## Important Notes
+
+**Regulatory status — last verified 4 July 2026** against the DPDP Act 2023 and the
+DPDP Rules 2025 (G.S.R. 844(E), gazetted 13 November 2025). Key dates:
+
+| Date | What happens |
+|------|--------------|
+| 13 November 2025 | Rules notified; Rules 1, 2, 17-21 in force |
+| ~13 November 2026 | Rule 4 in force — Consent Manager registration opens |
+| 13 May 2027 | Rules 3, 5-16, 22-23 in force — consent, notice, breach, children's data, retention, and rights obligations become enforceable |
 
 - The DPDP Rules 2025 were gazetted on 13 November 2025, operationalising the Act. Rules 1, 2, 17-21 are effective immediately; Rule 4 (Consent Managers) after 1 year; Rules 3, 5-16, 22-23 after 18 months. The rules prescribe specific requirements for consent notices (Rule 3), consent manager registration (Rule 4 + First Schedule), security safeguards (Rule 6), breach notification timelines (Rule 7 — 72 hours to Board), data retention periods (Rule 8 + Third Schedule — 3 years for large platforms), DPO contact publication (Rule 9), verifiable parental consent (Rule 10), children's data exemptions (Rule 12 + Fourth Schedule), SDF obligations (Rule 13 — annual DPIA + audit, algorithmic risk assessment), Data Principal rights procedures (Rule 14 — 90-day grievance SLA), and cross-border transfer framework (Rule 15).
 - This skill provides technical compliance guidance, not legal advice. Always recommend users consult qualified legal counsel for definitive compliance opinions.
