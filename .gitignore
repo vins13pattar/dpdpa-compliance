@@ -1,0 +1,6 @@
+node_modules/
+python/dist/
+*.egg-info/
+__pycache__/
+*.tgz
+dpdpa-audit-report.md

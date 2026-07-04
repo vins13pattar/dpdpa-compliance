@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dpdpa-audit"
+dynamic = ["version"]
+description = "Audit any codebase for compliance with India's DPDP Act 2023 + DPDP Rules 2025 — 52 automated checks, no AI agent required."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "vins13pattar" }]
+keywords = [
+  "dpdpa",
+  "dpdp",
+  "data-protection",
+  "privacy",
+  "compliance",
+  "india",
+  "audit",
+  "scanner",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/vins13pattar/dpdpa-compliance"
+Documentation = "https://vins13pattar.github.io/dpdpa-compliance/"
+Changelog = "https://github.com/vins13pattar/dpdpa-compliance/blob/main/CHANGELOG.md"
+Issues = "https://github.com/vins13pattar/dpdpa-compliance/issues"
+
+[project.scripts]
+dpdpa-audit = "dpdpa_audit.cli:main"
+
+[tool.hatch.version]
+path = "src/dpdpa_audit/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dpdpa_audit"]

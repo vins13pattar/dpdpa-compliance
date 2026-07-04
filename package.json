@@ -1,0 +1,40 @@
+{
+  "name": "dpdpa-audit",
+  "version": "2.1.0",
+  "description": "Audit any codebase for compliance with India's DPDP Act 2023 + DPDP Rules 2025 — 52 automated checks, no AI agent required.",
+  "keywords": [
+    "dpdpa",
+    "dpdp",
+    "dpdp-rules-2025",
+    "data-protection",
+    "privacy",
+    "compliance",
+    "india",
+    "audit",
+    "scanner",
+    "security"
+  ],
+  "homepage": "https://github.com/vins13pattar/dpdpa-compliance#readme",
+  "bugs": {
+    "url": "https://github.com/vins13pattar/dpdpa-compliance/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vins13pattar/dpdpa-compliance.git"
+  },
+  "license": "MIT",
+  "author": "vins13pattar",
+  "bin": {
+    "dpdpa-audit": "cli/dpdpa-audit.js"
+  },
+  "files": [
+    "cli/",
+    "skills/dpdpa-compliance/scripts/audit-scan.sh"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "bash tests/run-tests.sh"
+  }
+}

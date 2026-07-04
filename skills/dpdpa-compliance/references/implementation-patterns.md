@@ -1506,3 +1506,101 @@ CREATE TABLE traffic_data_logs (
     expires_at TIMESTAMPTZ NOT NULL                  -- Rule 8(3): minimum 1 year
 );
 ```
+
+---
+
+## Pattern 13: Consent Manager Integration (Section 6(7)-6(9), Rule 4)
+
+Consent Managers are Board-registered intermediaries through which Data Principals
+can give, manage, review, and withdraw consent across Data Fiduciaries. Rule 4
+comes into force one year after notification of the DPDP Rules 2025 — registration
+opens on or about **13 November 2026**. No Consent Managers are registered yet, so
+build against a provider-agnostic adapter now and bind a registered provider later.
+
+Key obligations when integrating (First Schedule, Part B):
+- The Consent Manager is a fiduciary to the Data Principal — it acts on their instructions
+- Consent given or withdrawn via a Consent Manager has the same effect as consent given directly to you (Section 6(7))
+- You must honour withdrawal signals from the Consent Manager as fast as direct withdrawals
+- Keep your own consent ledger in sync — the Consent Manager's records and yours must not diverge
+
+### Provider-Agnostic Adapter (Node.js / TypeScript)
+
+```typescript
+// consent/consent-manager-adapter.ts
+// Bind a Board-registered Consent Manager behind this interface once
+// registrations open (Rule 4, ~13 November 2026). Until then the
+// DirectConsent implementation (your own UI) is the only provider.
+
+export interface ConsentManagerAdapter {
+  /** Provider's Board registration ID — verify against the Board's public register. */
+  readonly registrationId: string;
+
+  /** Ask the Consent Manager for the user's current consent state per purpose. */
+  fetchConsentState(dataPrincipalId: string): Promise<PurposeConsent[]>;
+
+  /** Push a consent request (notice version + purposes) for the user to act on. */
+  requestConsent(dataPrincipalId: string, notice: NoticeRef): Promise<void>;
+}
+
+export interface PurposeConsent {
+  purposeSlug: string;
+  granted: boolean;
+  noticeVersion: string;
+  updatedAt: string; // ISO-8601
+}
+
+// Webhook receiver: the Consent Manager notifies grant/withdrawal events.
+// Section 6(7): treat these exactly like consent actions on your own UI.
+export async function handleConsentManagerWebhook(req: Request, res: Response) {
+  const event = verifySignature(req); // reject unsigned/replayed events
+  await recordConsent({
+    userId: event.dataPrincipalId,
+    purposeId: await purposeIdFor(event.purposeSlug),
+    action: event.granted ? 'granted' : 'withdrawn',
+    noticeVersion: event.noticeVersion,
+    consentMethod: `consent_manager:${event.registrationId}`,
+  });
+  if (!event.granted) {
+    // Withdrawal via Consent Manager must take effect as fast as direct
+    // withdrawal — stop downstream processing for this purpose now.
+    await stopProcessingForPurpose(event.dataPrincipalId, event.purposeSlug);
+  }
+  res.status(204).end();
+}
+```
+
+### Reconciliation Job
+
+```typescript
+// consent/reconcile-consent-manager.ts
+// Nightly: diff the Consent Manager's state against the local ledger.
+// Divergence is a compliance incident — the Consent Manager's record of a
+// withdrawal you missed means you processed without consent.
+export async function reconcile(adapter: ConsentManagerAdapter, db: Db) {
+  for await (const user of db.usersWithConsentManager(adapter.registrationId)) {
+    const remote = await adapter.fetchConsentState(user.id);
+    const local = await db.currentConsents(user.id);
+    for (const r of remote) {
+      const l = local.find((c) => c.purposeSlug === r.purposeSlug);
+      if (l && l.granted && !r.granted) {
+        await recordConsent({
+          userId: user.id,
+          purposeId: await purposeIdFor(r.purposeSlug),
+          action: 'withdrawn',
+          noticeVersion: r.noticeVersion,
+          consentMethod: `consent_manager_reconciliation:${adapter.registrationId}`,
+        });
+        await flagComplianceIncident(user.id, r.purposeSlug, 'missed_withdrawal');
+      }
+    }
+  }
+}
+```
+
+### Checklist Before Binding a Provider
+
+- [ ] Provider appears in the Data Protection Board's register of Consent Managers (verify, don't trust marketing)
+- [ ] Webhook signatures verified; events are idempotent and replay-safe
+- [ ] Withdrawal latency from webhook to processing stop is measured and comparable to direct withdrawal
+- [ ] Reconciliation job runs on a schedule and alerts on divergence
+- [ ] Your consent ledger records the provider's registration ID in `consent_method`
