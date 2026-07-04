@@ -1,11 +1,14 @@
 name: Release
 
-# Two ways to cut a release:
-#   1. Push a version tag:  git tag v2.1.0 && git push origin v2.1.0
-#   2. Run this workflow manually (Actions → Release → Run workflow) with the
+# Three ways a release is cut:
+#   1. Push to main with a bumped version in package.json — the tag
+#      v<version> and the GitHub Release are created automatically.
+#   2. Push a version tag:  git tag v2.1.0 && git push origin v2.1.0
+#   3. Run this workflow manually (Actions → Release → Run workflow) with the
 #      tag name — the tag is created on the target commit if it doesn't exist.
-# Either way it creates the GitHub Release with generated notes, then builds
-# the Python package and publishes it to PyPI.
+# Each path creates the GitHub Release with generated notes, then builds the
+# Python package and publishes it to PyPI. Every path is idempotent: if the
+# release for the version already exists, the run is a no-op.
 #
 # PyPI uses trusted publishing (OIDC) — no token secrets. One-time setup on
 # https://pypi.org → your account → Publishing → add a "pending publisher":
@@ -16,6 +19,7 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -28,24 +32,37 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      created: ${{ steps.release.outputs.created }}
     steps:
       - uses: actions/checkout@v4
       - name: Create GitHub Release (idempotent)
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.tag || github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="v$(jq -r .version package.json)"
+          fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists — skipping."
+            echo "created=false" >> "$GITHUB_OUTPUT"
           else
             gh release create "$TAG" \
               --title "$TAG" \
               --generate-notes \
               --target "$GITHUB_SHA"
+            echo "created=true" >> "$GITHUB_OUTPUT"
           fi
 
   pypi:
     needs: github-release
+    if: needs.github-release.outputs.created == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
