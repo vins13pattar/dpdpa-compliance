@@ -15,7 +15,9 @@ dpdpa-compliance/
 ├── LICENSE                                   # MIT license
 ├── package.json                              # npm package: dpdpa-audit CLI
 ├── cli/
-│   └── dpdpa-audit.js                        # Standalone CLI wrapping the scanner
+│   └── dpdpa-audit.js                        # Standalone CLI wrapping the scanner (Node)
+├── python/
+│   └── src/dpdpa_audit/                      # PyPI package (bundles a synced scanner copy)
 ├── tests/
 │   ├── run-tests.sh                          # Scanner + CLI test suite
 │   └── fixtures/                             # Known-vulnerable / known-compliant apps

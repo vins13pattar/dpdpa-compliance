@@ -104,6 +104,43 @@ else
 fi
 
 echo ""
+echo "== python package =="
+if cmp -s "$SCANNER" "$ROOT/python/src/dpdpa_audit/data/audit-scan.sh"; then
+  echo "  ok: bundled scanner is byte-identical to the canonical one"
+else
+  echo "  FAIL: python/src/dpdpa_audit/data/audit-scan.sh is out of sync —"
+  echo "        run: cp skills/dpdpa-compliance/scripts/audit-scan.sh python/src/dpdpa_audit/data/audit-scan.sh"
+  FAILURES=$((FAILURES + 1))
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  PYCLI() { PYTHONPATH="$ROOT/python/src" python3 -m dpdpa_audit "$@"; }
+
+  if [ "$(PYCLI --version)" = "$(node -p "require('$ROOT/package.json').version")" ]; then
+    echo "  ok: python --version matches package.json"
+  else
+    echo "  FAIL: python --version does not match package.json"
+    FAILURES=$((FAILURES + 1))
+  fi
+
+  if PYCLI "$FIXTURES/vulnerable-app" -o "$OUT/py-vuln.md" --fail-on high >/dev/null 2>&1; then
+    echo "  FAIL: python --fail-on high should exit non-zero on the vulnerable fixture"
+    FAILURES=$((FAILURES + 1))
+  else
+    echo "  ok: python --fail-on high exits non-zero on the vulnerable fixture"
+  fi
+
+  if PYCLI "$FIXTURES/compliant-app" -o "$OUT/py-comp.md" --fail-on critical >/dev/null 2>&1; then
+    echo "  ok: python --fail-on critical exits 0 on the compliant fixture"
+  else
+    echo "  FAIL: python --fail-on critical should exit 0 on the compliant fixture"
+    FAILURES=$((FAILURES + 1))
+  fi
+else
+  echo "  skip: python3 not available"
+fi
+
+echo ""
 if [ "$FAILURES" -gt 0 ]; then
   echo "$FAILURES assertion(s) failed."
   exit 1

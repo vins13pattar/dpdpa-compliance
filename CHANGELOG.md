@@ -19,6 +19,10 @@ is updated.
 ### Added
 - **Standalone CLI**: `npx dpdpa-audit` scans any repo without an AI agent —
   wraps the same 52-check scanner, adds `--fail-on <severity>` for CI gates.
+- **Python distribution**: `pipx install dpdpa-audit` — same scanner and flags,
+  published to PyPI from the release workflow via trusted publishing.
+- **Release automation**: pushing a `v*` tag creates the GitHub Release and
+  publishes the Python package.
 - **Go, Ruby on Rails, and Spring Boot implementation patterns**
   (`references/implementation-patterns-go-rails-spring.md`).
 - **Consent Manager integration pattern** (Pattern 13): provider-agnostic

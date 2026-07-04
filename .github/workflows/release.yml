@@ -1,0 +1,52 @@
+name: Release
+
+# Push a version tag (git tag v2.1.0 && git push origin v2.1.0) to:
+#   1. create the GitHub Release with generated notes
+#   2. build the Python package and publish it to PyPI
+#
+# PyPI uses trusted publishing (OIDC) — no token secrets. One-time setup on
+# https://pypi.org → your account → Publishing → add a "pending publisher":
+#   project: dpdpa-audit, owner: vins13pattar, repo: dpdpa-compliance,
+#   workflow: release.yml, environment: pypi
+# Until that's configured, the pypi job fails with an OIDC exchange error —
+# re-run it after setup.
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  github-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
+
+  pypi:
+    needs: github-release
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install build
+          python -m build python/
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist

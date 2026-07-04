@@ -30,6 +30,9 @@ commercial platforms — contributions here have outsized reach.
 4. Add assertions for both outcomes in `tests/run-tests.sh`.
 5. Beware substring matches: `grep 'dpo'` once matched "en**dpo**int". Use
    `\b` word boundaries for short tokens.
+6. The Python package bundles a copy of the scanner. After editing it, sync:
+   `cp skills/dpdpa-compliance/scripts/audit-scan.sh python/src/dpdpa_audit/data/audit-scan.sh`
+   — the test suite fails if the two files differ.
 
 ## Adding framework patterns
 

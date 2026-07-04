@@ -30,15 +30,24 @@ code for your stack, and explains the organizational obligations code can't solv
 
 ### 2. As a Standalone CLI (no AI agent required)
 
+Python (PyPI):
+
+```bash
+pipx install dpdpa-audit          # or: pip install dpdpa-audit / uvx dpdpa-audit
+dpdpa-audit ./my-app -o report.md
+```
+
+Node:
+
 ```bash
 npx github:vins13pattar/dpdpa-compliance            # scan the current directory
-npx github:vins13pattar/dpdpa-compliance ./my-app -o report.md
 npx github:vins13pattar/dpdpa-compliance . --fail-on high   # CI gate
 ```
 
-Runs the same 52-check scanner and writes a Markdown report with findings mapped
-to DPDPA sections, severity ratings, and remediation guidance. `--fail-on
-critical|high|medium|low` makes it a CI quality gate. Requires Node ≥ 18 and bash.
+Both run the same 52-check scanner and write a Markdown report with findings
+mapped to DPDPA sections, severity ratings, and remediation guidance.
+`--fail-on critical|high|medium|low` makes it a CI quality gate. Requires bash
+(Linux, macOS, WSL, Git Bash).
 
 ## What It Does
 
@@ -80,7 +89,8 @@ skills/dpdpa-compliance/
     ├── implementation-patterns-go-rails-spring.md  # Go, Rails, Spring Boot
     ├── organizational-guidelines.md            # Non-code obligations and templates
     └── dpdpa-full-text.md                      # Act + DPDP Rules 2025 full text
-cli/                                            # npx dpdpa-audit wrapper
+cli/                                            # npx dpdpa-audit wrapper (Node)
+python/                                         # dpdpa-audit PyPI package
 tests/                                          # Fixture apps + scanner test suite
 ```
 
